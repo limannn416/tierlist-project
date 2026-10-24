@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tierlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Sora:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e1116;--panel:#171c24;--panel2:#1f2530;--line:#2b3340;--text:#e8ecf2;--mute:#8a94a6;--accent:#4fd1c5;
+--t1:#ffb020;--t2:#c7d0dc;--t3:#d9895a;--t4:#6f8fd8;--t5:#8a7fd0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Sora,system-ui,sans-serif}
+h1,h2,.tier-h,.tab{font-family:"Chakra Petch",sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:22px;margin-right:auto}
+input,select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 12px;font:inherit}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dc{display:inline-block;padding:8px 14px;border-radius:8px;background:#5865f2;color:#fff;text-decoration:none;font-weight:600;font-size:14px}
+.dc:hover{background:#4752c4}
+nav{display:flex;gap:6px;padding:16px 24px 0;overflow-x:auto}
+.tab{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;color:var(--mute);cursor:pointer;font-size:16px;white-space:nowrap}
+.tab img{width:24px;height:24px;image-rendering:pixelated;object-fit:contain}
+.tab[aria-selected=true]{background:var(--panel2);color:var(--text);box-shadow:inset 0 3px var(--accent)}
+main{margin:0 24px 40px;background:var(--panel2);border:1px solid var(--line);border-radius:0 10px 10px 10px;padding:20px}
+.cols{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:14px;overflow-x:auto}
+.col{background:var(--panel);border-radius:10px;overflow:hidden;min-height:120px}
+.tier-h{margin:0;padding:12px 14px;font-size:20px;border-top:4px solid var(--c);color:var(--c)}
+.row{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px;background:none;border:0;border-top:1px solid var(--line);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.row:hover{background:#ffffff0d}
+.row img{width:26px;height:26px;border-radius:4px;image-rendering:pixelated}
+.row .nm{flex:1;overflow:hidden;text-overflow:ellipsis}
+.chip{font:700 12px "Chakra Petch",sans-serif;padding:3px 8px;border-radius:6px;background:var(--c);color:#10141a}
+.chip.lt{opacity:.7}
+.rk{width:34px;color:var(--mute);font:700 14px "Chakra Petch"}
+.pts{color:var(--mute);font-size:13px}
+.tiers{display:flex;gap:4px}
+.empty{padding:14px;color:var(--mute);font-size:13px}
+#overall{max-width:900px;margin:auto;background:var(--panel);border-radius:10px;overflow:hidden}
+dialog{border:0;border-radius:16px;background:var(--panel);color:var(--text);padding:0;width:min(440px,92vw)}
+dialog::backdrop{background:#000a}
+.m-top{display:flex;align-items:center;gap:16px;padding:20px;background:var(--panel2)}
+.m-top img{width:84px;height:84px;border-radius:50%;background:#0003;image-rendering:pixelated}
+.m-top h2{margin:0;font-size:26px}
+.m-body{padding:20px}
+.m-body .rank{color:var(--t1);font-weight:600}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.slot{height:48px;border-radius:10px;background:var(--panel2);display:flex;align-items:center;overflow:hidden}
+.slot img{width:30px;height:30px;margin:0 8px;image-rendering:pixelated;object-fit:contain}
+.slot span{flex:1;height:100%;display:grid;place-items:center;font:700 16px "Chakra Petch";background:var(--c);color:#10141a}
+.x{position:absolute;right:14px;top:14px;border:0;width:34px;height:34px;border-radius:50%;background:#ffffff22;color:var(--text);font-size:18px;cursor:pointer}
+@media(max-width:700px){header,nav{padding-left:12px;padding-right:12px}main{margin:0 12px 24px;padding:12px}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="site-name"></h1>
+  <input id="q" type="search" placeholder="Search player" aria-label="Search player">
+  <select id="region" aria-label="Region"><option value="">All regions</option></select>
+  <span id="dcs" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+</header>
+<nav id="tabs" role="tablist"></nav>
+<main id="view"></main>
+
+<dialog id="dlg"><button class="x" aria-label="Close" onclick="dlg.close()">✕</button><div id="card"></div></dialog>
+
+<script>
+/* ========= EDIT THIS SECTION ========= */
+const CONFIG = {
+  siteName: "My Tierlist",
+  discords: [
+    { name: "Discord 1", url: "https://discord.gg/YOUR-INVITE-1" },
+    { name: "Discord 2", url: "https://discord.gg/YOUR-INVITE-2" }
+  ],
+  // add more gamemodes here: put the icon file in /icons
+  gamemodes: [
+    { id: "bed",   name: "Bed",   icon: "icons/bed.png" },
+    { id: "pearl", name: "Pearl", icon: "icons/pearl.png" }
+  ]
+};
+
+// tiers: gamemode id -> HT1..HT5 / LT1..LT5.  ign = exact Minecraft username (used for skin heads)
+const PLAYERS = [
+  { ign: "Notch",     region: "EU", tiers: { bed: "HT1", pearl: "LT2" } },
+  { ign: "jeb_",      region: "EU", tiers: { bed: "LT1" } },
+  { ign: "Dinnerbone",region: "NA", tiers: { bed: "HT2", pearl: "HT1" } },
+  { ign: "Grumm",     region: "NA", tiers: { pearl: "LT3", bed: "LT4" } },
+  { ign: "Searge",    region: "AS", tiers: { bed: "HT3" } },
+  { ign: "Marc_IRL",  region: "NA", tiers: { pearl: "HT4" } },
+  { ign: "slicedlime",region: "EU", tiers: { bed: "LT5", pearl: "HT5" } }
+];
+/* ===================================== */
+
+const POINTS = {HT1:60,LT1:45,HT2:30,LT2:20,HT3:10,LT3:6,HT4:4,LT4:3,HT5:2,LT5:1};
+const TCOL = {1:"var(--t1)",2:"var(--t2)",3:"var(--t3)",4:"var(--t4)",5:"var(--t5)"};
+const TITLES = [[350,"Master"],[200,"Ace"],[100,"Specialist"],[45,"Cadet"],[10,"Novice"],[0,"Rookie"]];
+const $ = id => document.getElementById(id);
+const head = (ign,s=64) => `https://mc-heads.net/avatar/${encodeURIComponent(ign)}/${s}`;
+const lvl = t => +t[2];
+const sortVal = t => lvl(t)*2 + (t[0]==="L" ? 1 : 0);   // HT1 best
+
+PLAYERS.forEach(p => {
+  p.points = Object.values(p.tiers).reduce((a,t)=>a+(POINTS[t]||0),0);
+  p.title = TITLES.find(([min])=>p.points>=min)[1];
+});
+PLAYERS.sort((a,b)=>b.points-a.points);
+PLAYERS.forEach((p,i)=>p.rank=i+1);
+
+let tab = "overall";
+$("site-name").textContent = CONFIG.siteName;
+document.title = CONFIG.siteName;
+CONFIG.discords.forEach(d => $("dcs").insertAdjacentHTML("beforeend",
+  `<a class="dc" href="${d.url}" target="_blank" rel="noopener">${d.name}</a>`));
+[...new Set(PLAYERS.map(p=>p.region))].sort().forEach(r =>
+  $("region").insertAdjacentHTML("beforeend", `<option>${r}</option>`));
+
+function renderTabs(){
+  const all = [{id:"overall",name:"Overall"}, ...CONFIG.gamemodes];
+  $("tabs").innerHTML = all.map(g => `<button class="tab" role="tab" data-id="${g.id}" aria-selected="${g.id===tab}">
+    ${g.icon?`<img src="${g.icon}" alt="">`:"🏆"}${g.name}</button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach(b => b.onclick = () => { tab=b.dataset.id; renderTabs(); render(); });
+}
+
+const chip = t => `<span class="chip ${t[0]==="L"?"lt":""}" style="--c:${TCOL[lvl(t)]}">${t}</span>`;
+const person = (p, extra) => `<button class="row" data-ign="${p.ign}"><img src="${head(p.ign,32)}" alt="" loading="lazy"><span class="nm">${p.ign}</span>${extra||""}</button>`;
+
+function filtered(){
+  const q = $("q").value.trim().toLowerCase(), r = $("region").value;
+  return PLAYERS.filter(p => p.ign.toLowerCase().includes(q) && (!r || p.region===r));
+}
+
+function render(){
+  const list = filtered(), v = $("view");
+  if (tab==="overall"){
+    v.innerHTML = `<div id="overall">${list.map(p => `<button class="row" data-ign="${p.ign}">
+      <span class="rk">#${p.rank}</span><img src="${head(p.ign,32)}" alt="" loading="lazy">
+      <span class="nm">${p.ign}</span><span class="pts">${p.points} pts</span>
+      <span class="tiers">${CONFIG.gamemodes.filter(g=>p.tiers[g.id]).map(g=>chip(p.tiers[g.id])).join("")}</span></button>`).join("")
+      || '<div class="empty">No players found.</div>'}</div>`;
+  } else {
+    v.innerHTML = `<div class="cols">${[1,2,3,4,5].map(n => {
+      const ps = list.filter(p=>p.tiers[tab] && lvl(p.tiers[tab])===n)
+        .sort((a,b)=>sortVal(a.tiers[tab])-sortVal(b.tiers[tab])||b.points-a.points);
+      return `<section class="col"><h2 class="tier-h" style="--c:${TCOL[n]}">Tier ${n}</h2>
+        ${ps.map(p=>person(p, p.tiers[tab][0]==="H"?`<span class="pts">HT</span>`:`<span class="pts">LT</span>`)).join("") || '<div class="empty">Nobody yet</div>'}</section>`;
+    }).join("")}</div>`;
+  }
+  v.querySelectorAll(".row").forEach(b => b.onclick = () => openCard(b.dataset.ign));
+}
+
+function openCard(ign){
+  const p = PLAYERS.find(x=>x.ign===ign);
+  const slots = CONFIG.gamemodes.map(g => p.tiers[g.id]
+    ? `<div class="slot" style="--c:${TCOL[lvl(p.tiers[g.id])]}" title="${g.name}"><img src="${g.icon}" alt="${g.name}"><span>${p.tiers[g.id]}</span></div>`
+    : `<div class="slot" title="${g.name}: unranked"></div>`);
+  while (slots.length < 9) slots.push('<div class="slot"></div>');
+  $("card").innerHTML = `<div class="m-top"><img src="${head(p.ign,128)}" alt=""><div><h2>${p.ign}</h2><div class="pts">${p.title}</div></div></div>
+    <div class="m-body"><div class="rank">#${p.rank} Overall <span class="pts">(${p.points} points)</span></div>
+    <div class="pts">Region: ${p.region}</div><div class="slots">${slots.join("")}</div></div>`;
+  dlg.showModal();
+}
+dlg.addEventListener("click", e => { if (e.target===dlg) dlg.close(); });
+$("q").oninput = $("region").onchange = render;
+renderTabs(); render();
+</script>
+</body>
+</html>
